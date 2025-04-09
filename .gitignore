@@ -292,3 +292,4 @@ Newtonsoft.Json.xml
 
 # KDiff 3
 *.orig
+.github
