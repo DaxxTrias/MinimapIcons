@@ -55,3 +55,9 @@ Metadata/Monsters/LeagueRitual/ChaosGreenVinesDaemon_
 Metadata/Monsters/LeagueRitual/ChaosSoulrendPortalDaemon
 Metadata/Monsters/LeagueRitual/VaalAtziriDaemon
 Metadata/Monsters/LeagueRitual/LightningPylonDaemon
+
+# Campaign Non-Hostiles
+Metadata/Monsters/JellfishNettler/JellyfishNettlerFlying
+Metadata/Monsters/MudBurrower/MudBurrowerBodyDaemon
+Metadata/Monsters/MarakethSanctumTrial/Hazards/LaserCrossBeamTurret
+Metadata/Monsters/SaltGolem/SaltGolemSanctumTrial
