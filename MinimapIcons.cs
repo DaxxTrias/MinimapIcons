@@ -61,7 +61,6 @@ public class MinimapIcons : BaseSettingsPlugin<MapIconsSettings>
 
     public override void Tick()
     {
-        IconsBuilder.Tick();
         _ingameUi = GameController.Game.IngameState.IngameUi;
 
         var smallMiniMap = _ingameUi.Map.SmallMiniMap;
@@ -97,6 +96,9 @@ public class MinimapIcons : BaseSettingsPlugin<MapIconsSettings>
             !Settings.IgnoreLargePanels &&
             _ingameUi.LargePanels.Any(x => x.IsVisible))
             return;
+
+        // Run icon building on the render thread to avoid concurrent component dictionary access
+        IconsBuilder.Tick();
 
         var playerRender = GameController?.Player?.GetComponent<Render>();
         if (playerRender == null) return;
