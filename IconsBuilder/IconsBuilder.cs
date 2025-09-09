@@ -29,7 +29,7 @@ public class IconsBuilder
     private string DefaultIgnoreFile => Path.Combine(_plugin.DirectoryFullName, "config", "ignored_entities.txt");
     private string CustomIgnoreFile => Path.Combine(_plugin.ConfigDirectory, "ignored_entities.txt");
 
-    private List<string> IgnoredEntities { get; set; }
+    private List<string> IgnoredEntities { get; set; } = new List<string>();
     private Dictionary<string, Vector2i> AlertEntitiesWithIconSize { get; set; } = new Dictionary<string, Vector2i>();
 
     private static EntityType[] SkippedEntityTypes =>
@@ -72,6 +72,7 @@ public class IconsBuilder
         if (!File.Exists(path))
         {
            _plugin.LogError($"IconsBuilder -> Ignored entities file does not exist. Path: {path}");
+            IgnoredEntities = new List<string>();
             return;
         }
         IgnoredEntities = File.ReadAllLines(path).Where(line => !string.IsNullOrWhiteSpace(line) && !line.StartsWith('#')).ToList();
@@ -137,7 +138,7 @@ public class IconsBuilder
 
     private BaseIcon GenerateIcon(Entity entity)
     {
-        var metadata = entity.Metadata;
+        var metadata = entity.Metadata ?? string.Empty;
         if (Settings.CustomIcons.Content
                 .FirstOrDefault(x => _regexes.GetValue(x.MetadataRegex.Value, p => new Regex(p))!.IsMatch(metadata)) is { } customIconConfig)
         {
@@ -209,14 +210,19 @@ public class IconsBuilder
         if (entity.TryGetComponent<Shrine>(out _))
             return new ShrineIcon(entity, Settings);
 
-        if (entity.TryGetComponent<Transitionable>(out _) && entity.TryGetComponent<MinimapIcon>(out var mmIcon))
+        if (entity.TryGetComponent<MinimapIcon>(out var mmIcon))
         {
-            //Mission marker
-            if (entity.Path.Equals("Metadata/MiscellaneousObjects/MissionMarker", StringComparison.Ordinal) ||
-                (!string.IsNullOrEmpty(mmIcon.Name) && mmIcon.Name.Equals("MissionTarget", StringComparison.Ordinal)))
-                return new MissionMarkerIcon(entity, Settings);
+            var isMissionMarker = string.Equals("Metadata/MiscellaneousObjects/MissionMarker", entity.Path, StringComparison.Ordinal) ||
+                                  (!string.IsNullOrEmpty(mmIcon.Name) && string.Equals(mmIcon.Name, "MissionTarget", StringComparison.Ordinal));
 
-            return new MiscIcon(entity, Settings);
+            if (entity.HasComponent<Transitionable>())
+            {
+                // Mission marker
+                if (isMissionMarker)
+                    return new MissionMarkerIcon(entity, Settings);
+
+                return new MiscIcon(entity, Settings);
+            }
         }
 
         if ((entity.TryGetComponent<MinimapIcon>(out _) && entity.TryGetComponent<Targetable>(out _)) ||
