@@ -138,6 +138,10 @@ public class IconsBuilder
 
     private BaseIcon GenerateIcon(Entity entity)
     {
+        // Early validation
+        if (entity == null || !entity.IsValid)
+            return null;
+
         var metadata = entity.Metadata ?? string.Empty;
         if (Settings.CustomIcons.Content
                 .FirstOrDefault(x => _regexes.GetValue(x.MetadataRegex.Value, p => new Regex(p))!.IsMatch(metadata)) is { } customIconConfig)
@@ -164,22 +168,38 @@ public class IconsBuilder
             entity.TryGetComponent<MinimapIcon>(out var minimapIconComponent) && 
             !minimapIconComponent.IsHide)
         {
-            var name = minimapIconComponent.Name;
-            if (!string.IsNullOrEmpty(name))
+            try
             {
-                return new IngameIconReplacerIcon(entity, Settings, _plugin.Settings);
+                var name = minimapIconComponent.Name;
+                if (!string.IsNullOrEmpty(name))
+                {
+                    return new IngameIconReplacerIcon(entity, Settings, _plugin.Settings);
+                }
+            }
+            catch
+            {
+                // minimapIconComponent.Name can throw for certain entities during transitions
+                return null;
             }
         }
 
         //Monsters
         if (entity.Type == EntityType.Monster)
         {
-            if (!entity.IsAlive) return null;
+            try
+            {
+                if (!entity.IsAlive) return null;
 
-            if (entity.League == LeagueType.Delirium)
-                return new DeliriumIcon(entity, Settings, AlertEntitiesWithIconSize);
+                if (entity.League == LeagueType.Delirium)
+                    return new DeliriumIcon(entity, Settings, AlertEntitiesWithIconSize);
 
-            return new MonsterIcon(entity, Settings, AlertEntitiesWithIconSize);
+                return new MonsterIcon(entity, Settings, AlertEntitiesWithIconSize);
+            }
+            catch
+            {
+                // Entity properties can throw during state transitions
+                return null;
+            }
         }
 
         //NPC
@@ -189,18 +209,37 @@ public class IconsBuilder
         //Player
         if (entity.Type == EntityType.Player)
         {
-            if (!entity.TryGetComponent<Player>(out var player) ||
-                player.PlayerName is not {} playerName ||
-                _plugin.GameController.IngameState.Data.LocalPlayer.Address == entity.Address ||
-                (_plugin.GameController.IngameState.Data.LocalPlayer.TryGetComponent<Render>(out var localPlayerRender) && localPlayerRender.Name == entity.RenderName)) return null;
+            try
+            {
+                if (!entity.TryGetComponent<Player>(out var player) ||
+                    player.PlayerName is not {} playerName ||
+                    _plugin.GameController.IngameState.Data.LocalPlayer.Address == entity.Address ||
+                    (_plugin.GameController.IngameState.Data.LocalPlayer.TryGetComponent<Render>(out var localPlayerRender) && localPlayerRender.Name == entity.RenderName)) return null;
 
-            if (!entity.IsValid) return null;
-            return new PlayerIcon(entity, Settings, playerName);
+                if (!entity.IsValid) return null;
+                return new PlayerIcon(entity, Settings, playerName);
+            }
+            catch
+            {
+                // Player component access can throw during transitions
+                return null;
+            }
         }
 
         //Chests
-        if (entity.Type == EntityType.Chest && !entity.IsOpened)
-            return new ChestIcon(entity, Settings);
+        if (entity.Type == EntityType.Chest)
+        {
+            try
+            {
+                if (!entity.IsOpened)
+                    return new ChestIcon(entity, Settings);
+            }
+            catch
+            {
+                // IsOpened can throw for certain chest entities
+                return null;
+            }
+        }
 
         //Area transition
         if (entity.Type == EntityType.AreaTransition)
@@ -210,24 +249,64 @@ public class IconsBuilder
         if (entity.TryGetComponent<Shrine>(out _))
             return new ShrineIcon(entity, Settings);
 
+        // Minimap icon with transitionable component (portals, mission markers, etc.)
         if (entity.TryGetComponent<MinimapIcon>(out var mmIcon))
         {
-            var isMissionMarker = string.Equals("Metadata/MiscellaneousObjects/MissionMarker", entity.Path, StringComparison.Ordinal) ||
-                                  (!string.IsNullOrEmpty(mmIcon.Name) && string.Equals(mmIcon.Name, "MissionTarget", StringComparison.Ordinal));
-
-            if (entity.HasComponent<Transitionable>())
+            try
             {
-                // Mission marker
-                if (isMissionMarker)
-                    return new MissionMarkerIcon(entity, Settings);
+                // Safely check for mission marker
+                var isMissionMarker = false;
+                try
+                {
+                    isMissionMarker = string.Equals("Metadata/MiscellaneousObjects/MissionMarker", entity.Path, StringComparison.Ordinal) ||
+                                      (!string.IsNullOrEmpty(mmIcon.Name) && string.Equals(mmIcon.Name, "MissionTarget", StringComparison.Ordinal));
+                }
+                catch
+                {
+                    // mmIcon.Name can throw for certain entities during transitions
+                    isMissionMarker = false;
+                }
 
-                return new MiscIcon(entity, Settings);
+                // Safely check for Transitionable component
+                bool hasTransitionable = false;
+                try
+                {
+                    hasTransitionable = entity.HasComponent<Transitionable>();
+                }
+                catch
+                {
+                    // HasComponent can throw when entity is in invalid state
+                    hasTransitionable = false;
+                }
+
+                if (hasTransitionable)
+                {
+                    // Mission marker
+                    if (isMissionMarker)
+                        return new MissionMarkerIcon(entity, Settings);
+
+                    return new MiscIcon(entity, Settings);
+                }
+            }
+            catch
+            {
+                // If anything else goes wrong with MinimapIcon processing, skip this entity
+                return null;
             }
         }
 
-        if ((entity.TryGetComponent<MinimapIcon>(out _) && entity.TryGetComponent<Targetable>(out _)) ||
-            entity.Path is "Metadata/Terrain/Leagues/Sanctum/Objects/SanctumMote")
-            return new MiscIcon(entity, Settings);
+        // Targetable minimap icons and special cases
+        try
+        {
+            if ((entity.TryGetComponent<MinimapIcon>(out _) && entity.TryGetComponent<Targetable>(out _)) ||
+                entity.Path is "Metadata/Terrain/Leagues/Sanctum/Objects/SanctumMote")
+                return new MiscIcon(entity, Settings);
+        }
+        catch
+        {
+            // Component access can throw during entity transitions
+            return null;
+        }
 
         return null;
     }
