@@ -151,34 +151,51 @@ public class IconsBuilder
 
         if (entity.Type == EntityType.WorldItem)
         {
-            if (Settings.UseReplacementsForItemIconsWhenOutOfRange &&
-                entity.TryGetComponent<WorldItem>(out var worldItem) && 
-                worldItem.Icon is var icon && 
-                icon != MapIconsIndex.None)
+            if (Settings.UseReplacementsForItemIconsWhenOutOfRange)
             {
-                return new IngameItemReplacerIcon(entity, Settings, icon);
+                try
+                {
+                    if (entity.TryGetComponent<WorldItem>(out var worldItem) && 
+                        worldItem.Icon is var icon && 
+                        icon != MapIconsIndex.None)
+                    {
+                        return new IngameItemReplacerIcon(entity, Settings, icon);
+                    }
+                }
+                catch
+                {
+                    // TryGetComponent can throw IndexOutOfRangeException when component dictionary is corrupted
+                    return null;
+                }
             }
-            else
-            {
-                return null;
-            }
+            return null;
         }
 
-        if (Settings.UseReplacementsForGameIconsWhenOutOfRange &&
-            entity.TryGetComponent<MinimapIcon>(out var minimapIconComponent) && 
-            !minimapIconComponent.IsHide)
+        if (Settings.UseReplacementsForGameIconsWhenOutOfRange)
         {
             try
             {
-                var name = minimapIconComponent.Name;
-                if (!string.IsNullOrEmpty(name))
+                if (entity.TryGetComponent<MinimapIcon>(out var minimapIconComponent) && 
+                    !minimapIconComponent.IsHide)
                 {
-                    return new IngameIconReplacerIcon(entity, Settings, _plugin.Settings);
+                    try
+                    {
+                        var name = minimapIconComponent.Name;
+                        if (!string.IsNullOrEmpty(name))
+                        {
+                            return new IngameIconReplacerIcon(entity, Settings, _plugin.Settings);
+                        }
+                    }
+                    catch
+                    {
+                        // minimapIconComponent.Name can throw for certain entities during transitions
+                        return null;
+                    }
                 }
             }
             catch
             {
-                // minimapIconComponent.Name can throw for certain entities during transitions
+                // TryGetComponent can throw IndexOutOfRangeException when component dictionary is corrupted
                 return null;
             }
         }
@@ -211,17 +228,34 @@ public class IconsBuilder
         {
             try
             {
-                if (!entity.TryGetComponent<Player>(out var player) ||
-                    player.PlayerName is not {} playerName ||
-                    _plugin.GameController.IngameState.Data.LocalPlayer.Address == entity.Address ||
-                    (_plugin.GameController.IngameState.Data.LocalPlayer.TryGetComponent<Render>(out var localPlayerRender) && localPlayerRender.Name == entity.RenderName)) return null;
+                Player player = null;
+                if (!entity.TryGetComponent(out player) || player == null)
+                    return null;
+
+                if (player.PlayerName is not {} playerName)
+                    return null;
+
+                if (_plugin.GameController.IngameState.Data.LocalPlayer.Address == entity.Address)
+                    return null;
+
+                // Safe check for local player render name
+                try
+                {
+                    if (_plugin.GameController.IngameState.Data.LocalPlayer.TryGetComponent<Render>(out var localPlayerRender) && 
+                        localPlayerRender.Name == entity.RenderName)
+                        return null;
+                }
+                catch
+                {
+                    // TryGetComponent on local player can also throw
+                }
 
                 if (!entity.IsValid) return null;
                 return new PlayerIcon(entity, Settings, playerName);
             }
             catch
             {
-                // Player component access can throw during transitions
+                // TryGetComponent can throw IndexOutOfRangeException when component dictionary is corrupted
                 return null;
             }
         }
