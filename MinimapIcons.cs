@@ -17,19 +17,19 @@ namespace MinimapIcons;
 
 public class MinimapIcons : BaseSettingsPlugin<MapIconsSettings>
 {
-    private IngameUIElements _ingameUi;
+    private IngameUIElements? _ingameUi;
     private bool? _largeMap;
     private float _mapScale;
     private Vector2 _mapCenter;
     private SubMap LargeMapWindow => GameController.Game.IngameState.IngameUi.Map.LargeMap;
-    private CachedValue<List<BaseIcon>> _iconListCache;
-    private IconsBuilder.IconsBuilder _iconsBuilder;
+    private CachedValue<List<BaseIcon>>? _iconListCache;
+    private IconsBuilder.IconsBuilder? _iconsBuilder;
     private IconsBuilder.IconsBuilder IconsBuilder => _iconsBuilder ??= new IconsBuilder.IconsBuilder(this);
 
     public override bool Initialise()
     {
         IconsBuilder.Initialise();
-        Settings.AlwaysShownIngameIcons.Content = Settings.AlwaysShownIngameIcons.Content.DistinctBy(x => x.Value).ToList();
+        Settings.AlwaysShownIngameIcons.Content = [.. Settings.AlwaysShownIngameIcons.Content.DistinctBy(x => x.Value)];
         Graphics.InitImage("sprites.png");
         Graphics.InitImage("Icons.png");
         CanUseMultiThreading = true;
@@ -86,28 +86,33 @@ public class MinimapIcons : BaseSettingsPlugin<MapIconsSettings>
 
     public override void Render()
     {
+        var ingameUi = _ingameUi;
+        var gameController = GameController;
         if (_largeMap == null || 
-            !GameController.InGame ||
+            ingameUi == null ||
+            gameController == null ||
+            !gameController.InGame ||
             Settings.DrawOnlyOnLargeMap && _largeMap != true) 
             return;
 
         if (!Settings.IgnoreFullscreenPanels &&
-            _ingameUi.FullscreenPanels.Any(x => x.IsVisible) ||
+            ingameUi.FullscreenPanels.Any(x => x.IsVisible) ||
             !Settings.IgnoreLargePanels &&
-            _ingameUi.LargePanels.Any(x => x.IsVisible))
+            ingameUi.LargePanels.Any(x => x.IsVisible))
             return;
 
         // Run icon building on the render thread to avoid concurrent component dictionary access
         IconsBuilder.Tick();
 
-        var playerRender = GameController?.Player?.GetComponent<Render>();
+        var playerRender = gameController.Player?.GetComponent<Render>();
         if (playerRender == null) return;
         var playerPos = playerRender.Pos.WorldToGrid();
         var playerHeight = -playerRender.UnclampedHeight;
+        var ingameData = gameController.IngameState.Data;
 
         if (LargeMapWindow == null) return;
 
-        var baseIcons = _iconListCache.Value;
+        var baseIcons = _iconListCache?.Value;
         if (baseIcons == null) return;
 
         foreach (var icon in baseIcons)
@@ -129,14 +134,14 @@ public class MinimapIcons : BaseSettingsPlugin<MapIconsSettings>
             var iconGridPos = icon.GridPosition();
             var position = _mapCenter +
                            DeltaInWorldToMinimapDelta(iconGridPos - playerPos,
-                               (playerHeight + GameController.IngameState.Data.GetTerrainHeightAt(iconGridPos)) * PoeMapExtension.WorldToGridConversion);
+                               (playerHeight + ingameData.GetTerrainHeightAt(iconGridPos)) * PoeMapExtension.WorldToGridConversion);
 
             var iconValueMainTexture = icon.MainTexture;
             var size = iconValueMainTexture.Size;
             var halfSize = size / 2f;
             icon.DrawRect = new RectangleF(position.X - halfSize, position.Y - halfSize, size, size);
             var drawRect = icon.DrawRect;
-            if (_largeMap == false && !_ingameUi.Map.SmallMiniMap.GetClientRectCache.Contains(drawRect)) 
+            if (_largeMap == false && !ingameUi.Map.SmallMiniMap.GetClientRectCache.Contains(drawRect)) 
                 continue;
 
             Graphics.DrawImage(iconValueMainTexture.FileName, drawRect, iconValueMainTexture.UV, iconValueMainTexture.Color);
@@ -169,6 +174,7 @@ public class MinimapIcons : BaseSettingsPlugin<MapIconsSettings>
 public static class Extensions
 {
     public static T GetOrAdd<TKey, T>(this Dictionary<TKey, T> dictionary, TKey key, Func<T> valueFunc)
+        where TKey : notnull
     {
         if (dictionary.TryGetValue(key, out var result))
         {

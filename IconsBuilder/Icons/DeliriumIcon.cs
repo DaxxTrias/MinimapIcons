@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -31,9 +31,9 @@ internal class DeliriumIcon : BaseIcon
 
         (MainTexture.Size, Text) = Rarity switch
         {
-            MonsterRarity.White => (MainTexture.Size = settings.SizeEntityWhiteIcon, null),
-            MonsterRarity.Magic => (MainTexture.Size = settings.SizeEntityMagicIcon, null),
-            MonsterRarity.Rare => (MainTexture.Size = settings.SizeEntityRareIcon, null),
+            MonsterRarity.White => (MainTexture.Size = settings.SizeEntityWhiteIcon, string.Empty),
+            MonsterRarity.Magic => (MainTexture.Size = settings.SizeEntityMagicIcon, string.Empty),
+            MonsterRarity.Rare => (MainTexture.Size = settings.SizeEntityRareIcon, string.Empty),
             MonsterRarity.Unique => (MainTexture.Size = settings.SizeEntityUniqueIcon, entity.RenderName),
             _ => throw new ArgumentException("Delirium icon rarity corrupted.")
         };
@@ -74,7 +74,7 @@ internal class DeliriumIcon : BaseIcon
             MainTexture.UV = SpriteHelper.GetUV(MapIconsIndex.LootFilterLargeGreenHexagon);
         else
         {
-            string modName = null;
+            string? modName = null;
 
             if (entity.HasComponent<ObjectMagicProperties>())
             {

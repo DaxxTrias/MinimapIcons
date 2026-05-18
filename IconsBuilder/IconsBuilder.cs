@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -136,7 +136,7 @@ public class IconsBuilder
 
     private readonly ConditionalWeakTable<string, Regex> _regexes = [];
 
-    private BaseIcon GenerateIcon(Entity entity)
+    private BaseIcon? GenerateIcon(Entity entity)
     {
         // Early validation
         if (entity == null || !entity.IsValid)
@@ -228,7 +228,7 @@ public class IconsBuilder
         {
             try
             {
-                Player player = null;
+                Player? player = null;
                 if (!entity.TryGetComponent(out player) || player == null)
                     return null;
 

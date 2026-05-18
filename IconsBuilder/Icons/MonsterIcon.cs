@@ -56,7 +56,7 @@ public class MonsterIcon : BaseIcon
             MainTexture.UV = SpriteHelper.GetUV(MapIconsIndex.LootFilterLargeGreenHexagon);
         else
         {
-            string modName = null;
+            string? modName = null;
 
             if (entity.HasComponent<ObjectMagicProperties>())
             {
