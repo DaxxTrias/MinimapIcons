@@ -183,7 +183,7 @@ public class IconsBuilder
                         var name = minimapIconComponent.Name;
                         if (!string.IsNullOrEmpty(name))
                         {
-                            return new IngameIconReplacerIcon(entity, Settings, _plugin.IsAlwaysShownIngameIcon);
+                            return new IngameIconReplacerIcon(entity, Settings, _plugin.Settings);
                         }
                     }
                     catch

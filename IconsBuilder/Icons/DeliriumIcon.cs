@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using ExileCore2.PoEMemory.Components;
 using ExileCore2.PoEMemory.MemoryObjects;
 using ExileCore2.Shared;
@@ -83,14 +84,9 @@ internal class DeliriumIcon : BaseIcon
 
                 if (mods != null)
                 {
-                    foreach (var mod in mods)
-                    {
-                        if (mod == "MonsterConvertsOnDeath_")
-                            Show = () => entity.IsAlive && entity.IsHostile;
+                    if (mods.Contains("MonsterConvertsOnDeath_")) Show = () => entity.IsAlive && entity.IsHostile;
 
-                        if (modName == null && modIcons.ContainsKey(mod))
-                            modName = mod;
-                    }
+                    modName = mods.FirstOrDefault(modIcons.ContainsKey);
                 }
             }
 

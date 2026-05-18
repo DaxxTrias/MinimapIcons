@@ -27,7 +27,7 @@ public class IngameItemReplacerIcon : BaseIcon
 
 public class IngameIconReplacerIcon : BaseIcon
 {
-    public IngameIconReplacerIcon(Entity entity, IconsBuilderSettings settings, Func<string?, bool> isAlwaysShownIngameIcon)
+    public IngameIconReplacerIcon(Entity entity, IconsBuilderSettings settings, MapIconsSettings mapIconsSettings)
         : base(entity)
     {
         var isHidden = false;
@@ -55,7 +55,7 @@ public class IngameIconReplacerIcon : BaseIcon
                      Update(ref transitionableFlag1, () => entity.GetComponent<Transitionable>()?.Flag1 ?? 1) == 1 &&
                      Update(ref shrineIsAvailable, () => entity.GetComponent<Shrine>()?.IsAvailable ?? shrineIsAvailable) &&
                      !Update(ref isOpened, () => entity.GetComponent<Chest>()?.IsOpened ?? isOpened) &&
-                     (!entity.IsValid || isAlwaysShownIngameIcon(entity.Path));
+                     (!entity.IsValid || mapIconsSettings.AlwaysShownIngameIcons.Content.Any(x => x.Value.Equals(entity.Path)));
         
         string name = "";
         try
