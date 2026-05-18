@@ -17,7 +17,7 @@ public class IconsBuilderSettings
     public RangeNode<int> RunEveryXTicks { get; set; } = new RangeNode<int>(10, 1, 20);
 
     [Menu("Debug information about entities")]
-    public ToggleNode LogDebugInformation { get; set; } = new ToggleNode(true);
+    public ToggleNode LogDebugInformation { get; set; } = new ToggleNode(false);
 
     public ToggleNode HidePlayers { get; set; } = new ToggleNode(false);
     public ToggleNode HideMinions { get; set; } = new ToggleNode(false);
