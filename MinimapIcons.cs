@@ -24,12 +24,14 @@ public class MinimapIcons : BaseSettingsPlugin<MapIconsSettings>
     private SubMap LargeMapWindow => GameController.Game.IngameState.IngameUi.Map.LargeMap;
     private CachedValue<List<BaseIcon>>? _iconListCache;
     private IconsBuilder.IconsBuilder? _iconsBuilder;
+    private readonly HashSet<string> _alwaysShownIngameIconPaths = new(StringComparer.Ordinal);
     private IconsBuilder.IconsBuilder IconsBuilder => _iconsBuilder ??= new IconsBuilder.IconsBuilder(this);
 
     public override bool Initialise()
     {
         IconsBuilder.Initialise();
         Settings.AlwaysShownIngameIcons.Content = [.. Settings.AlwaysShownIngameIcons.Content.DistinctBy(x => x.Value)];
+        RefreshAlwaysShownIngameIconPaths();
         Graphics.InitImage("sprites.png");
         Graphics.InitImage("Icons.png");
         CanUseMultiThreading = true;
@@ -50,13 +52,33 @@ public class MinimapIcons : BaseSettingsPlugin<MapIconsSettings>
             var entitySource = Settings.DrawCachedEntities
                 ? GameController?.EntityListWrapper.Entities
                 : GameController?.EntityListWrapper?.OnlyValidEntities;
-            var baseIcons = entitySource?.Select(x => x.GetHudComponent<BaseIcon>())
-                .Where(icon => icon != null)
-                .Where(icon => (!icon.Entity.Path.Contains("Breach/Monsters") && !icon.Entity.Path.Contains("Chests/breach")) || Settings.CacheBreachEntities || icon.Entity.IsValid)
-                .OrderBy(x => x.Priority)
-                .ToList();
-            return baseIcons ?? [];
+
+            if (entitySource == null)
+                return [];
+
+            List<BaseIcon> baseIcons = [];
+            foreach (var entity in entitySource)
+            {
+                var icon = entity.GetHudComponent<BaseIcon>();
+                if (icon == null)
+                    continue;
+
+                var path = icon.Entity.Path;
+                var isBreachEntity = path.Contains("Breach/Monsters") || path.Contains("Chests/breach");
+                if (isBreachEntity && !Settings.CacheBreachEntities && !icon.Entity.IsValid)
+                    continue;
+
+                baseIcons.Add(icon);
+            }
+
+            baseIcons.Sort(static (left, right) => left.Priority.CompareTo(right.Priority));
+            return baseIcons;
         }, Settings.IconListRefreshPeriod);
+    }
+
+    internal bool IsAlwaysShownIngameIcon(string? path)
+    {
+        return path != null && _alwaysShownIngameIconPaths.Contains(path);
     }
 
     public override void Tick()
@@ -114,6 +136,7 @@ public class MinimapIcons : BaseSettingsPlugin<MapIconsSettings>
 
         var baseIcons = _iconListCache?.Value;
         if (baseIcons == null) return;
+        RefreshAlwaysShownIngameIconPaths();
 
         foreach (var icon in baseIcons)
         {
@@ -128,7 +151,7 @@ public class MinimapIcons : BaseSettingsPlugin<MapIconsSettings>
             if (icon.HasIngameIcon &&
                 icon is not CustomIcon &&
                 (!Settings.DrawReplacementsForGameIconsWhenOutOfRange || icon.Entity.IsValid) &&
-                !Settings.AlwaysShownIngameIcons.Content.Any(x => x.Value.Equals(icon.Entity.Path)))
+                !IsAlwaysShownIngameIcon(icon.Entity.Path))
                 continue;
 
             var iconGridPos = icon.GridPosition();
@@ -168,6 +191,16 @@ public class MinimapIcons : BaseSettingsPlugin<MapIconsSettings>
     private Vector2 DeltaInWorldToMinimapDelta(Vector2 delta, float deltaZ)
     {
         return _mapScale * Vector2.Multiply(new Vector2(delta.X - delta.Y, deltaZ - (delta.X + delta.Y)), new Vector2(CameraAngleCos, CameraAngleSin));
+    }
+
+    private void RefreshAlwaysShownIngameIconPaths()
+    {
+        _alwaysShownIngameIconPaths.Clear();
+        foreach (var iconPath in Settings.AlwaysShownIngameIcons.Content)
+        {
+            if (!string.IsNullOrEmpty(iconPath.Value))
+                _alwaysShownIngameIconPaths.Add(iconPath.Value);
+        }
     }
 }
 

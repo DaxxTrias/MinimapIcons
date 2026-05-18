@@ -32,16 +32,6 @@ public class IconsBuilder
     private List<string> IgnoredEntities { get; set; } = new List<string>();
     private Dictionary<string, Vector2i> AlertEntitiesWithIconSize { get; set; } = new Dictionary<string, Vector2i>();
 
-    private static EntityType[] SkippedEntityTypes =>
-    [
-        EntityType.HideoutDecoration, 
-        EntityType.Effect, 
-        EntityType.Light, 
-        EntityType.ServerObject, 
-        EntityType.Daemon,
-        EntityType.Error,
-    ];
-
     private int RunCounter { get; set; }
     private int IconVersion;
         
@@ -128,10 +118,20 @@ public class IconsBuilder
     private bool SkipIcon(Entity entity)
     {
         if (entity is not { IsValid: true }) return true;
-        if (SkippedEntityTypes.Any(x => x == entity.Type)) return true;
+        if (ShouldSkipEntityType(entity.Type)) return true;
         if (IgnoredEntities.Any(x => entity.Path?.Contains(x) == true)) return true;
 
         return false;
+    }
+
+    private static bool ShouldSkipEntityType(EntityType entityType)
+    {
+        return entityType is EntityType.HideoutDecoration
+            or EntityType.Effect
+            or EntityType.Light
+            or EntityType.ServerObject
+            or EntityType.Daemon
+            or EntityType.Error;
     }
 
     private readonly ConditionalWeakTable<string, Regex> _regexes = [];
@@ -183,7 +183,7 @@ public class IconsBuilder
                         var name = minimapIconComponent.Name;
                         if (!string.IsNullOrEmpty(name))
                         {
-                            return new IngameIconReplacerIcon(entity, Settings, _plugin.Settings);
+                            return new IngameIconReplacerIcon(entity, Settings, _plugin.IsAlwaysShownIngameIcon);
                         }
                     }
                     catch

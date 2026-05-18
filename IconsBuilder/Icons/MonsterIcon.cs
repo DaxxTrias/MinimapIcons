@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 using ExileCore2.PoEMemory.Components;
 using ExileCore2.PoEMemory.MemoryObjects;
 using ExileCore2.Shared;
@@ -66,9 +65,14 @@ public class MonsterIcon : BaseIcon
 
                 if (mods != null)
                 {
-                    if (mods.Contains("MonsterConvertsOnDeath_")) Show = () => entity.IsAlive && entity.IsHostile;
+                    foreach (var mod in mods)
+                    {
+                        if (mod == "MonsterConvertsOnDeath_")
+                            Show = () => entity.IsAlive && entity.IsHostile;
 
-                    modName = mods.FirstOrDefault(modIcons.ContainsKey);
+                        if (modName == null && modIcons.ContainsKey(mod))
+                            modName = mod;
+                    }
                 }
             }
 
