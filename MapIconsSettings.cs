@@ -19,6 +19,7 @@ public class MapIconsSettings : ISettings
     public ToggleNode CacheBreachEntities { get; set; } = new ToggleNode(true);
     public ToggleNode Enable { get; set; } = new ToggleNode(true);
     public RangeNode<int> IconListRefreshPeriod { get; set; } = new RangeNode<int>(100, 0, 1000);
+    public ToggleNode HighlightHiddenMonsters { get; set; } = new ToggleNode(true);
 
     [Menu(null, CollapsedByDefault = true)]
     public ContentNode<TextNode> AlwaysShownIngameIcons { get; set; } =
@@ -28,6 +29,18 @@ public class MapIconsSettings : ISettings
             [
                 new TextNode("Metadata/MiscellaneousObjects/Breach/BreachObject"),
                 new TextNode("Metadata/Terrain/Leagues/Ritual/RitualRuneInteractable"),
+            ],
+            EnableControls = true, 
+            ItemFactory = () => new TextNode(""),
+            UseFlatItems = true,
+        };
+
+    [Menu(null, CollapsedByDefault = true)]
+    public ContentNode<TextNode> IgnoreHiddenStatusMinimapIcons { get; set; } =
+        new ContentNode<TextNode>()
+        {
+            Content =
+            [
             ],
             EnableControls = true, 
             ItemFactory = () => new TextNode(""),

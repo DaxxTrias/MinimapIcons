@@ -16,7 +16,8 @@ public class PlayerIcon : BaseIcon
         MainTexture = new HudTexture("Icons.png")
         {
             UV = SpriteHelper.GetUV(MapIconsIndex.OtherPlayer),
+            Size = settings.PlayerIconSize,
         };
-        Text = playerName;
+        Text = settings.ShowPlayerNames ? playerName : "";
     }
 }

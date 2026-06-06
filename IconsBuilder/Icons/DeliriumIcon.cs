@@ -46,10 +46,6 @@ internal class DeliriumIcon : BaseIcon
             if (entity.Path.Contains("ShardPack", StringComparison.OrdinalIgnoreCase))
             {
                 MainTexture.UV = SpriteHelper.GetUV(MapIconsIndex.MyPlayer);
-                MainTexture.Size = settings.SizeEntityProximityMonsterIcon;
-                Hidden = () => false;
-                Priority = IconPriority.Medium;
-                return;
             }
             else
             {
@@ -57,6 +53,12 @@ internal class DeliriumIcon : BaseIcon
                 MainTexture.UV = SpriteHelper.GetUV(MapIconsIndex.QuestObject);
                 return;
             }
+
+            MainTexture.Size = settings.DeliriumMonsterIconSize;
+            Hidden = () => false;
+
+            Priority = IconPriority.Medium;
+            return;
         }
 
         if (!entity.IsHostile)

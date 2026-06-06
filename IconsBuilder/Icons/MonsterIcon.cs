@@ -38,9 +38,17 @@ public class MonsterIcon : BaseIcon
             _ => throw new ArgumentException($"{nameof(MonsterIcon)} wrong rarity for {entity.Path}. Dump: {(entity.TryGetComponent<ObjectMagicProperties>(out var omp) ? omp.DumpObject() : "ObjectMagicProperties=null")}")
         };
 
-        if (_HasIngameIcon && entity.HasComponent<MinimapIcon>() && !string.Equals(entity.GetComponent<MinimapIcon>().Name, "NPC", StringComparison.Ordinal))
-            return;
+        var isMonsterWithIcon = settings.MonstersWithIcons.Content.Any(x => IconsBuilder.GetRegex(x.Value).IsMatch(entity.Path ?? string.Empty));
+        if (isMonsterWithIcon && IngameIconIndex == MapIconsIndex.BlightMonster)
+        {
+            MainTexture.Size *= 2;
+        }
 
+        if (_HasIngameIcon && 
+            entity.TryGetComponent<MinimapIcon>(out var mI) && 
+            mI.Name != "NPC" &&
+            !isMonsterWithIcon)
+            return;
         if (!entity.IsHostile)
         {
             if (!_HasIngameIcon)
@@ -49,27 +57,25 @@ public class MonsterIcon : BaseIcon
                 Priority = IconPriority.Low;
                 Show = () => !settings.HideMinions && entity.IsAlive;
             }
-
-            //Spirits icon
         }
         else if (Rarity == MonsterRarity.Unique && (entity.Path?.Contains("Metadata/Monsters/Spirit/") == true))
             MainTexture.UV = SpriteHelper.GetUV(MapIconsIndex.LootFilterLargeGreenHexagon);
         else
         {
             string? modName = null;
-
-            if (entity.HasComponent<ObjectMagicProperties>())
+            ObjectMagicProperties? objectMagicProperties = null;
+            if (entity.TryGetComponent<ObjectMagicProperties>(out var component))
             {
-                var objectMagicProperties = entity.GetComponent<ObjectMagicProperties>();
+                objectMagicProperties = component;
+            }
 
-                var mods = objectMagicProperties.Mods;
+            var mods = objectMagicProperties?.Mods;
 
-                if (mods != null)
-                {
-                    if (mods.Contains("MonsterConvertsOnDeath_")) Show = () => entity.IsAlive && entity.IsHostile;
+            if (mods != null)
+            {
+                if (mods.Contains("MonsterConvertsOnDeath_")) Show = () => entity.IsAlive && entity.IsHostile;
 
-                    modName = mods.FirstOrDefault(modIcons.ContainsKey);
-                }
+                modName = mods.FirstOrDefault(modIcons.ContainsKey);
             }
 
             if (modName != null)
@@ -79,26 +85,40 @@ public class MonsterIcon : BaseIcon
                 Priority = IconPriority.VeryHigh;
             }
             else
-            {
+            { 
+                var oldShow = Show;
                 switch (Rarity)
                 {
                     case MonsterRarity.White:
-                        MainTexture.UV = SpriteHelper.GetUV(MapIconsIndex.LootFilterLargeRedCircle);
+                        if (!isMonsterWithIcon)
+                            MainTexture.UV = SpriteHelper.GetUV(MapIconsIndex.LootFilterLargeRedCircle);
+                        if (settings.MonsterRarityNames.ShowNormalNames)
+                            Text = RenderName.Split(',').FirstOrDefault() ?? string.Empty;
+                        Show = () => oldShow() && settings.ShowNormalMonsters;
                         break;
                     case MonsterRarity.Magic:
-                        MainTexture.UV = SpriteHelper.GetUV(MapIconsIndex.LootFilterLargeBlueCircle);
-
+                        if (!isMonsterWithIcon)
+                            MainTexture.UV = SpriteHelper.GetUV(MapIconsIndex.LootFilterLargeBlueCircle);
+                        if (settings.MonsterRarityNames.ShowMagicNames)
+                            Text = RenderName.Split(',').FirstOrDefault() ?? string.Empty;
+                        Show = () => oldShow() && settings.ShowMagicMonsters;
                         break;
                     case MonsterRarity.Rare:
-                        MainTexture.UV = SpriteHelper.GetUV(MapIconsIndex.LootFilterLargeYellowCircle);
+                        if (!isMonsterWithIcon)
+                            MainTexture.UV = SpriteHelper.GetUV(MapIconsIndex.LootFilterLargeYellowCircle);
+                        if (settings.MonsterRarityNames.ShowRareNames)
+                            Text = RenderName.Split(',').FirstOrDefault() ?? string.Empty;
                         break;
                     case MonsterRarity.Unique:
-                        MainTexture.UV = SpriteHelper.GetUV(MapIconsIndex.LootFilterLargeWhiteHexagon);
+                        if (!isMonsterWithIcon)
+                            MainTexture.UV = SpriteHelper.GetUV(MapIconsIndex.LootFilterLargeWhiteHexagon);
                         MainTexture.Color = Color.DarkOrange;
+                        if (settings.MonsterRarityNames.ShowUniqueNames)
+                            Text = RenderName.Split(',').FirstOrDefault() ?? string.Empty;
                         break;
                     default:
                         throw new ArgumentOutOfRangeException(
-                            $"Rarity wrong was is {Rarity}. {(entity.TryGetComponent<ObjectMagicProperties>(out var omp2) ? omp2.DumpObject() : "ObjectMagicProperties=null")}");
+                            $"Rarity wrong was is {Rarity}. {objectMagicProperties?.DumpObject() ?? "ObjectMagicProperties=null"}");
                 }
             }
         }

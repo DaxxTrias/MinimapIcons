@@ -128,7 +128,7 @@ public class MinimapIcons : BaseSettingsPlugin<MapIconsSettings>
             if (icon.HasIngameIcon &&
                 icon is not CustomIcon &&
                 (!Settings.DrawReplacementsForGameIconsWhenOutOfRange || icon.Entity.IsValid) &&
-                !Settings.AlwaysShownIngameIcons.Content.Any(x => x.Value.Equals(icon.Entity.Path)))
+                !Settings.AlwaysShownIngameIcons.Content.Any(x => global::MinimapIcons.IconsBuilder.IconsBuilder.GetRegex(x.Value).IsMatch(icon.Entity.Path)))
                 continue;
 
             var iconGridPos = icon.GridPosition();
@@ -145,13 +145,18 @@ public class MinimapIcons : BaseSettingsPlugin<MapIconsSettings>
                 continue;
 
             Graphics.DrawImage(iconValueMainTexture.FileName, drawRect, iconValueMainTexture.UV, iconValueMainTexture.Color);
-            if (icon.Hidden())
+            if (icon.BorderColor is { } borderColor)
             {
-                var s = drawRect.Width * 0.5f;
+                Graphics.DrawFrame(drawRect, borderColor, 1);
+            }
+
+            if (Settings.HighlightHiddenMonsters && icon.Hidden())
+            {
+                var s = drawRect.Width * 0.1f;
                 drawRect.Inflate(-s, -s);
 
-                Graphics.DrawImage(icon.MainTexture.FileName, drawRect,
-                    SpriteHelper.GetUV(MapIconsIndex.LootFilterSmallCyanCircle), Color.White);
+                Graphics.DrawImage("Icons.png", drawRect,
+                    SpriteHelper.GetUV(MapIconsIndex.LootFilterSmallWhiteCircle), Color.White);
 
                 drawRect.Inflate(s, s);
             }

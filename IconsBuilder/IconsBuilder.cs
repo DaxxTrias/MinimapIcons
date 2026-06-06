@@ -134,7 +134,7 @@ public class IconsBuilder
             or EntityType.Error;
     }
 
-    private readonly ConditionalWeakTable<string, Regex> _regexes = [];
+    private static readonly ConditionalWeakTable<string, Regex> _regexes = [];
 
     private BaseIcon? GenerateIcon(Entity entity)
     {
@@ -144,7 +144,7 @@ public class IconsBuilder
 
         var metadata = entity.Metadata ?? string.Empty;
         if (Settings.CustomIcons.Content
-                .FirstOrDefault(x => _regexes.GetValue(x.MetadataRegex.Value, p => new Regex(p))!.IsMatch(metadata)) is { } customIconConfig)
+                .FirstOrDefault(x => GetRegex(x.MetadataRegex.Value).IsMatch(metadata)) is { } customIconConfig)
         {
             return new CustomIcon(entity, Settings, customIconConfig);
         }
@@ -175,8 +175,10 @@ public class IconsBuilder
         {
             try
             {
+                var path = entity.Path ?? string.Empty;
                 if (entity.TryGetComponent<MinimapIcon>(out var minimapIconComponent) && 
-                    !minimapIconComponent.IsHide)
+                    (!minimapIconComponent.IsHide || _plugin.Settings.IgnoreHiddenStatusMinimapIcons.Content.Any(x => GetRegex(x.Value).IsMatch(path))) &&
+                    !Settings.MonstersWithIcons.Content.Any(x => GetRegex(x.Value).IsMatch(path)))
                 {
                     try
                     {
@@ -343,5 +345,10 @@ public class IconsBuilder
         }
 
         return null;
+    }
+
+    public static Regex GetRegex(string regex)
+    {
+        return _regexes.GetValue(regex, p => new Regex(p));
     }
 }

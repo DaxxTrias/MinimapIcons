@@ -23,7 +23,7 @@ public class MiscIcon : BaseIcon
     {
         if (_HasIngameIcon)
         {
-            MainTexture.Size = settings.SizeDefaultIcon;
+            MainTexture.Size = settings.MiscIngameIconSize;
             Text = RenderName;
             Priority = IconPriority.VeryHigh;
             return;
