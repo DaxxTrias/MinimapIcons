@@ -125,10 +125,7 @@ public class MinimapIcons : BaseSettingsPlugin<MapIconsSettings>
             if (!icon.Show())
                 continue;
 
-            if (icon.HasIngameIcon &&
-                icon is not CustomIcon &&
-                (!Settings.DrawReplacementsForGameIconsWhenOutOfRange || icon.Entity.IsValid) &&
-                !Settings.AlwaysShownIngameIcons.Content.Any(x => global::MinimapIcons.IconsBuilder.IconsBuilder.GetRegex(x.Value).IsMatch(icon.Entity.Path)))
+            if (ShouldSkipIngameIcon(icon))
                 continue;
 
             var iconGridPos = icon.GridPosition();
@@ -173,6 +170,19 @@ public class MinimapIcons : BaseSettingsPlugin<MapIconsSettings>
     private Vector2 DeltaInWorldToMinimapDelta(Vector2 delta, float deltaZ)
     {
         return _mapScale * Vector2.Multiply(new Vector2(delta.X - delta.Y, deltaZ - (delta.X + delta.Y)), new Vector2(CameraAngleCos, CameraAngleSin));
+    }
+
+    private bool ShouldSkipIngameIcon(BaseIcon icon)
+    {
+        if (!icon.HasIngameIcon || icon is CustomIcon)
+            return false;
+
+        if (Settings.DrawReplacementsForGameIconsWhenOutOfRange && !icon.Entity.IsValid)
+            return false;
+
+        var path = icon.Entity.Path ?? string.Empty;
+        return !Settings.AlwaysShownIngameIcons.Content.Any(x => global::MinimapIcons.IconsBuilder.IconsBuilder.GetRegex(x.Value).IsMatch(path)) &&
+               (icon is not MonsterIcon || !global::MinimapIcons.IconsBuilder.IconsBuilder.ShouldTreatAsMonsterWithIcon(path, Settings.IconsBuilderSettings));
     }
 }
 

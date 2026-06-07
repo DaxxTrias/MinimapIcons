@@ -38,7 +38,7 @@ public class MonsterIcon : BaseIcon
             _ => throw new ArgumentException($"{nameof(MonsterIcon)} wrong rarity for {entity.Path}. Dump: {(entity.TryGetComponent<ObjectMagicProperties>(out var omp) ? omp.DumpObject() : "ObjectMagicProperties=null")}")
         };
 
-        var isMonsterWithIcon = settings.MonstersWithIcons.Content.Any(x => IconsBuilder.GetRegex(x.Value).IsMatch(entity.Path ?? string.Empty));
+        var isMonsterWithIcon = IconsBuilder.ShouldTreatAsMonsterWithIcon(entity, settings);
         if (isMonsterWithIcon && IngameIconIndex == MapIconsIndex.BlightMonster)
         {
             MainTexture.Size *= 2;
