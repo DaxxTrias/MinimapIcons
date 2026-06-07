@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Text.RegularExpressions;
 using ExileCore2;
 using ExileCore2.PoEMemory.Components;
 using ExileCore2.PoEMemory.Elements;
@@ -172,6 +173,15 @@ public class MinimapIcons : BaseSettingsPlugin<MapIconsSettings>
         return _mapScale * Vector2.Multiply(new Vector2(delta.X - delta.Y, deltaZ - (delta.X + delta.Y)), new Vector2(CameraAngleCos, CameraAngleSin));
     }
 
+    private static readonly List<Regex> AlwaysShownIngameIcons = new[]
+        {
+            "^Metadata/Monsters/Breach/",
+            "^Metadata/MiscellaneousObjects/Breach/BreachObject",
+            "^Metadata/Terrain/Leagues/Ritual/RitualRuneInteractable",
+        }
+        .Select(x => new Regex(x, RegexOptions.Compiled))
+        .ToList();
+
     private bool ShouldSkipIngameIcon(BaseIcon icon)
     {
         if (!icon.HasIngameIcon || icon is CustomIcon)
@@ -181,7 +191,8 @@ public class MinimapIcons : BaseSettingsPlugin<MapIconsSettings>
             return false;
 
         var path = icon.Entity.Path ?? string.Empty;
-        return !Settings.AlwaysShownIngameIcons.Content.Any(x => global::MinimapIcons.IconsBuilder.IconsBuilder.GetRegex(x.Value).IsMatch(path)) &&
+        return !AlwaysShownIngameIcons.Any(x => x.IsMatch(path)) &&
+               !Settings.AlwaysShownIngameIcons.Content.Any(x => global::MinimapIcons.IconsBuilder.IconsBuilder.GetRegex(x.Value).IsMatch(path)) &&
                (icon is not MonsterIcon || !global::MinimapIcons.IconsBuilder.IconsBuilder.ShouldTreatAsMonsterWithIcon(path, Settings.IconsBuilderSettings));
     }
 }

@@ -15,7 +15,10 @@ namespace MinimapIcons.IconsBuilder;
 
 public class IconsBuilder
 {
-    private const string BreachMonsterPathPrefix = "Metadata/Monsters/Breach/Monsters/";
+    private static readonly List<Regex> MonstersWithIcons = new[] { "^Metadata/Monsters/Breach/" }
+        .Select(x => new Regex(x, RegexOptions.Compiled))
+        .ToList();
+
     private readonly MinimapIcons _plugin;
 
     public IconsBuilder(MinimapIcons plugin)
@@ -353,14 +356,10 @@ public class IconsBuilder
         return _regexes.GetValue(regex, p => new Regex(p));
     }
 
-    public static bool ShouldTreatAsMonsterWithIcon(Entity entity, IconsBuilderSettings settings)
-    {
-        return ShouldTreatAsMonsterWithIcon(entity.Path ?? string.Empty, settings);
-    }
-
     public static bool ShouldTreatAsMonsterWithIcon(string path, IconsBuilderSettings settings)
     {
-        return path.StartsWith(BreachMonsterPathPrefix, StringComparison.Ordinal) ||
+        path ??= "";
+        return MonstersWithIcons.Any(x => x.IsMatch(path)) ||
                settings.MonstersWithIcons.Content.Any(x => GetRegex(x.Value).IsMatch(path));
     }
 }

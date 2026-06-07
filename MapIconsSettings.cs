@@ -27,8 +27,6 @@ public class MapIconsSettings : ISettings
         {
             Content =
             [
-                new TextNode("Metadata/MiscellaneousObjects/Breach/BreachObject"),
-                new TextNode("Metadata/Terrain/Leagues/Ritual/RitualRuneInteractable"),
             ],
             EnableControls = true, 
             ItemFactory = () => new TextNode(""),
